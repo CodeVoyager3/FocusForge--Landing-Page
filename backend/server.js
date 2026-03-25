@@ -1,0 +1,47 @@
+const express = require('express');
+const cors = require('cors');
+require('dotenv').config();
+
+const connectDB = require('./src/config/db');
+
+// Initialize Express
+const app = express();
+
+// Database Connection
+connectDB();
+
+// Middleware
+app.use(cors()); // Allow all origins for hackathon development
+app.use(express.json()); // Parse incoming JSON requests
+
+// Routes Imports
+const topicGenerator = require('./src/utils/topicGenerator');
+const videoFinder = require('./src/routes/videoFinder');
+const courseRoutes = require('./src/routes/course');
+
+// Base status route
+app.get('/', (req, res) => {
+    res.send('AI Adaptive Learning Platform API is running...');
+});
+
+// Mount modular sub-routers
+app.use('/topic-generator', topicGenerator);
+app.use('/video-finder', videoFinder); // Legacy path
+app.use('/api/search', videoFinder);   // Standard path
+app.use('/api/course', courseRoutes);
+
+// Global Error Handler
+app.use((err, req, res, next) => {
+    console.error("Global Catch-All Error:", err.stack);
+    res.status(500).json({
+        success: false,
+        message: "An unexpected error occurred internally",
+        error: err.message
+    });
+});
+
+// Server Start
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+    console.log(`🚀 AI Assessment Engine Server listening on port ${PORT}`);
+});

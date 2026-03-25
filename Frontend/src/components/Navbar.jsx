@@ -1,0 +1,42 @@
+import { useTheme } from './ThemeProvider';
+import { ShimmerButton } from './magicui/ShimmerButton';
+
+export default function Navbar() {
+  const { isDark, toggleTheme } = useTheme();
+
+  return (
+    <nav className="fixed top-6 left-1/2 -translate-x-1/2 z-50 flex justify-between items-center px-8 py-3 w-[95%] max-w-6xl rounded-full backdrop-blur-2xl border shadow-2xl transition-colors duration-400" style={{ background: 'var(--theme-nav-bg)', borderColor: 'var(--theme-border)' }}>
+      <div className="text-2xl font-bold tracking-tighter font-headline italic transition-colors duration-400" style={{ color: 'var(--theme-text-heading)' }}>Focus Forge</div>
+      <div className="hidden md:flex gap-10 items-center">
+        <a className="text-primary font-medium font-label tracking-wide text-xs uppercase hover:text-primary transition-all duration-300" href="#">Features</a>
+        <a className="font-medium font-label tracking-wide text-xs uppercase hover:text-primary transition-all duration-300" href="#" style={{ color: 'var(--theme-nav-link)' }}>Pipeline</a>
+        <a className="font-medium font-label tracking-wide text-xs uppercase hover:text-primary transition-all duration-300" href="#" style={{ color: 'var(--theme-nav-link)' }}>Impact</a>
+        <a className="font-medium font-label tracking-wide text-xs uppercase hover:text-primary transition-all duration-300" href="#" style={{ color: 'var(--theme-nav-link)' }}>Team</a>
+      </div>
+      <div className="flex items-center gap-4">
+        {/* Theme Toggle */}
+        <button
+          onClick={toggleTheme}
+          className="theme-toggle"
+          aria-label="Toggle dark mode"
+          title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+        >
+          <div className={`theme-toggle-knob ${isDark ? 'dark' : 'light'}`}>
+            <span className="material-symbols-outlined" style={{ fontSize: '12px', color: 'var(--color-on-primary)' }}>
+              {isDark ? 'dark_mode' : 'light_mode'}
+            </span>
+          </div>
+        </button>
+        <ShimmerButton
+          background={isDark ? "#22c55e" : "#16a34a"}
+          shimmerColor="rgba(255,255,255,0.45)"
+          borderRadius="9999px"
+          className="font-label text-xs font-bold px-6 py-2 text-on-primary active:scale-95 flex items-center gap-2 group"
+        >
+          Start Learning
+          <span className="material-symbols-outlined text-sm group-hover:translate-x-1 transition-transform">arrow_outward</span>
+        </ShimmerButton>
+      </div>
+    </nav>
+  );
+}
