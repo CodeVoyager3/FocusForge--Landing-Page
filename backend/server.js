@@ -18,6 +18,7 @@ app.use(express.json()); // Parse incoming JSON requests
 const topicGenerator = require('./src/utils/topicGenerator');
 const videoFinder = require('./src/routes/videoFinder');
 const courseRoutes = require('./src/routes/course');
+const activityRoutes = require('./src/routes/activity');
 
 // Base status route
 app.get('/', (req, res) => {
@@ -29,6 +30,7 @@ app.use('/topic-generator', topicGenerator);
 app.use('/video-finder', videoFinder); // Legacy path
 app.use('/api/search', videoFinder);   // Standard path
 app.use('/api/course', courseRoutes);
+app.use('/api/activity', activityRoutes);
 
 // Global Error Handler
 app.use((err, req, res, next) => {

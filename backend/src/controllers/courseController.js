@@ -1,6 +1,41 @@
 const User = require('../models/User');
 const Course = require('../models/Course');
+const Activity = require('../models/Activity');
 const { prepareModule } = require('../utils/modulePreparer');
+
+/**
+ * Logs a subtopic completion event for today's activity record.
+ */
+const logActivity = async (userId, courseId, courseTitle, count = 1) => {
+    try {
+        const dateStr = new Date().toISOString().slice(0, 10); // "YYYY-MM-DD"
+        await Activity.findOneAndUpdate(
+            { userId, date: dateStr },
+            {
+                $inc: { subtopicsCompleted: count },
+                $setOnInsert: { userId, date: dateStr },
+                // Update course entry if exists, else push new
+            },
+            { upsert: true, new: true }
+        );
+        // Separately update the courses sub-array
+        const existing = await Activity.findOne({ userId, date: dateStr });
+        if (existing) {
+            const courseEntry = existing.courses.find(
+                c => c.courseId?.toString() === courseId?.toString()
+            );
+            if (courseEntry) {
+                courseEntry.count += count;
+            } else {
+                existing.courses.push({ courseId, courseTitle, count });
+            }
+            await existing.save();
+        }
+    } catch (err) {
+        // Non-blocking — don't fail the main request
+        console.error('logActivity error (non-fatal):', err.message);
+    }
+};
 
 /**
  * Initializes a new course from LLM generated JSON and assigns it to the user.
@@ -293,8 +328,14 @@ const markSubtopicWatched = async (req, res) => {
             return res.status(404).json({ success: false, message: "Invalid module or subtopic index" });
         }
 
+        const wasAlreadyCompleted = mod.subtopics[subtopicIndex].status === 'completed';
         mod.subtopics[subtopicIndex].status = 'completed';
         await course.save();
+
+        // Log activity only if newly completed (not already completed)
+        if (!wasAlreadyCompleted) {
+            logActivity(course.userId, courseId, course.course_title, 1);
+        }
 
         return res.json({ success: true, message: "Subtopic marked as completed" });
     } catch (error) {
@@ -357,6 +398,9 @@ const gradeModuleQuiz = async (req, res) => {
         const scorePercentage = Math.round((correctCount / allQuestions.length) * 100);
 
         if (scorePercentage >= 80) {
+            // Count newly completed subtopics for activity logging
+            const newlyCompleted = targetModule.subtopics.filter(s => s.status !== 'completed').length;
+
             // Mark ALL subtopics in this module as completed
             targetModule.subtopics.forEach(sub => { sub.status = 'completed'; });
 
@@ -370,6 +414,11 @@ const gradeModuleQuiz = async (req, res) => {
             }
 
             await course.save();
+
+            // Log activity for module completion
+            if (newlyCompleted > 0) {
+                logActivity(course.userId, courseId, course.course_title, newlyCompleted);
+            }
 
             // 🔥 Fire-and-forget: Prepare the next module in the background
             if (nextModuleIndex < course.modules.length) {
